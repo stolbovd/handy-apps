@@ -1,0 +1,50 @@
+{
+    "rules": {
+        "class-name": true,
+        "comment-format": [true, {"ignore-words": ["ToDo", "FixMe", "Part", "Note"]}],
+        "indent": [true, "tabs"],
+        "no-duplicate-variable": true,
+        "no-eval": true,
+        "no-internal-module": true,
+        "no-var-keyword": true,
+        "one-line": [true, "check-whitespace"],
+        "quotemark": [true, "double"],
+        "semicolon": false,
+        "typedef-whitespace": [true, {
+            "call-signature": "nospace",
+            "index-signature": "nospace",
+            "parameter": "nospace",
+            "property-declaration": "nospace",
+            "variable-declaration": "nospace"
+        }],
+        "variable-name": [true, "ban-keywords"],
+        "whitespace": [true,
+            "check-branch",
+            "check-decl",
+            "check-operator",
+            "check-separator",
+            "check-type"
+        ],
+        "return-undefined": true
+    },
+    "jsRules": {
+        "indent": [true, "tabs"],
+        "no-duplicate-variable": true,
+        "no-eval": true,
+        "one-line": [true, "check-whitespace"],
+        "quotemark": [true, "double"],
+        "semicolon": false,
+        "triple-equals": [true, "allow-null-check"],
+        "variable-name": [true, "ban-keywords"],
+        "whitespace": [true,
+            "check-branch",
+            "check-decl",
+            "check-operator",
+            "check-separator",
+            "check-type"
+        ]
+    },
+    "exclude": [
+        "**/typings/**"
+    ]
+}

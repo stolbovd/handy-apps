@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Клад в Alva Donna</title>
+	<link href="../kontext/plugins/bootstrap/bootstrap.min.css" rel="stylesheet">
+	<link href="../kontext/theme/css/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<!--	<link href="../kontext/theme/css/animate.css" rel="stylesheet">-->
+	<!--	<link href="../kontext/theme/css/style.css" rel="stylesheet">-->
+</head>
+<body>
+<!-- ko ifnot: isReady -->
+<!-- ko foreach: points -->
+<div data-bind="if: isReady">
+	<a class="btn btn-link" data-bind="click: expand, text: point.id() + 'развернуть'"></a>
+</div>
+<div data-bind="if: isExpanded">
+	<p data-bind="text: point.id"></p>
+	<h2 data-bind="text: point.task"></h2>
+	<a class="btn btn-link" target="_blank"
+	   data-bind="attr:{href: point.linkUrl}, text: point.linkName"></a>
+	<div class="input-group mb-3" data-bind="if: isCode">
+		<input type="text" class="form-control" placeholder="Код или ответ"
+		       aria-label="Код или ответ" aria-describedby="button-addon2"
+		       data-bind="value: code, event: {keyup: onKeyUp}">
+		<div class="input-group-append">
+			<button class="btn btn-outline-secondary" type="button" id="button-addon2"
+			        data-bind="click: check">проверить
+			</button>
+		</div>
+	</div>
+	<div class="row" data-bind="foreach: images">
+		<div class="col-md-4">
+			<div class="thumbnail">
+				<a data-bind="attr:{src: $data}">
+					<img data-bind="attr:{src: $data}" alt="Lights" style="width:100%">
+				</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /ko -->
+<!-- /ko -->
+<div data-bind="if: isReady">
+	<div data-bind="html: readyHtml"></div>
+	<button class="btn btn-success" data-bind="click: start">начать сначала</button>
+</div>
+<script src="../kontext/plugins/require/require.js"></script>
+<script src="../kontext/built/require-config.js"></script>
+<script src="built/require-config-app.js"></script>
+<script>
+	requirejs(["built/domain/alva.js"]);
+</script>
+</body>
+</html>

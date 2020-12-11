@@ -1,0 +1,644 @@
+<html>
+<head>
+<title>Православный календарь</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+a, div, span, td, p, select {font-size: 10px; font-family: verdana, sans-serif; color: black; }
+select {vertical-align: middle;}
+.big {font-size: 11px;}
+a {text-decoration: underline;}
+a.holiday, .holiday {color: red; }
+a.big_holiday {color: white}
+td {text-align: center; padding: 2px; margin: 0px}
+td.border {text-align: center; border: 1px solid black; padding: 2px; margin: 0px}
+.fast_fish {background-color: #ccccff}
+.fast_oil {background-color: #ffff99}
+.fast_no_oil {background-color: #99ffcc}
+.fast_dry {background-color: #ffccff}
+.fast_no_meat {background-color: #ccffff}
+.fast_no_meal {background-color: #cccccc}
+.big_holiday {background-color: red; color: white}
+.pomin {color: black; font-weight: bold; font-size: 9px}
+</style>
+</head>
+<body>
+<script language="javascript">
+function parse_params(){
+	var params = {};
+	var raw_params = location.href.split("?")[1];
+	if(!raw_params) return params;
+	var raw_params1 = raw_params.split("&");
+	for(var i=0; i<raw_params1.length; i++){ 
+		var name_value = raw_params1[i].split("=");
+		params[name_value[0]] = name_value[1];
+	}
+	return params;
+}
+var PARAMS = parse_params();
+
+function get_num_param(name, default_value) {
+	try {
+		var value = parseInt(PARAMS[name]);
+		if(isNaN(value)) return default_value;
+		return value;
+	} catch(e) { return default_value; }
+}
+
+var now = new Date();
+var YEAR_NUM = get_num_param("year", now.getFullYear());
+var MONTH_NUM = get_num_param("month", now.getMonth()+1);
+var default_months_in_row = screen && screen.width > 550? 4 : screen.width > 425? 3 : 2;
+var MONTHS_IN_ROW = get_num_param("months_in_row", default_months_in_row);
+var ONE_MONTH = MONTHS_IN_ROW == 0;
+var FONT = get_num_param("font", 10); 
+var big_font = Math.round(FONT*11/10);
+var pomin_font = FONT-1;
+var PADDING = Math.round(FONT*2/10);
+var BORDER = Math.round(FONT/10);
+var css = "a, div, span, td, p, select, option {font-size: " + FONT +"px;}\n" +
+".big {font-size: " + big_font + "px;}\n" + 
+".pomin {font-size: " + pomin_font + "px;}\n" + 
+"td, td.border {padding: " + PADDING + "px;}\n" + 
+"td.border {border: " + BORDER + "px solid black;}\n";
+document.write("<style type='text/css'>\n" + css + "</style>\n");
+var SHOW_WEEK_DAYS = get_num_param("week_days", 0);
+</script>
+<div><a href='javascript:prev()'><<</a>&nbsp;<span id=html_date class=big></span>&nbsp;<a href='javascript:next()'>>></a></div>
+<div id=html_calendar></div>
+<div id=html_settings><a href="javascript:show_settings()">Настройки</a></div>
+<noscript><div class=big><b>Включите JavaScript!</b></div></noscript>
+</body>
+</html>
+<script language="javascript">
+//внимание! дополнительные праздники можно установить в функции set_additional_holidays()
+function set_additional_holidays() {
+	//JAN.days[1].set_text("Тест");
+}
+//праздники со всенощным бдением или полиелейной службой накануне можно установить в функции set_polieleys()
+function set_polieleys() {
+	//JAN.days[1].set_polieley("Тест");
+}
+
+var WEEK_DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+function Month(id, name, max_day){
+	this.id = id;
+	this.name = name;
+	this.days = [];
+	this.max_day = max_day;
+}
+Month.prototype.get_max_day = function() { return this.days[this.max_day]; };
+
+var JAN = new Month(1, "Январь", 31);
+var FEB = new Month(2, "Февраль", 28);
+var MAR = new Month(3, "Март", 31);
+var APR = new Month(4, "Апрель", 30);
+var MAY = new Month(5, "Май", 31);
+var JUN = new Month(6, "Июнь", 30);
+var JUL = new Month(7, "Июль", 31);
+var AUG = new Month(8, "Август", 31);
+var SEP = new Month(9, "Сентябрь", 30);
+var OCT = new Month(10, "Октябрь", 31);
+var NOV = new Month(11, "Ноябрь", 30);
+var DEC = new Month(12, "Декабрь", 31);
+
+var YEAR = [null, JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC];
+
+var NO_FAST = 0, FAST_FISH = 1, FAST_OIL = 2, FAST_NO_OIL = 3, FAST_DRY = 4, FAST_NO_MEAT = 5, FAST_NO_FISH = 6, FAST_NO_MEAL = 7;
+
+var NO_HOLIDAY = 0, HOLIDAY = 1, BIG_HOLIDAY = 2, POMIN = 3;
+
+function get_fast_style(/*number 0-4*/fast){
+	switch(fast){
+		case FAST_FISH: return " class=fast_fish";
+		case FAST_OIL: return " class=fast_oil";
+		case FAST_NO_OIL: return " class=fast_no_oil";
+		case FAST_DRY: return " class=fast_dry";
+		case FAST_NO_MEAT: return " class=fast_no_meat";
+		case FAST_NO_MEAL: return " class=fast_no_meal";
+	}
+	return "";
+}
+
+var MO = 1, TU = 2, WE = 3, TH = 4, FR = 5, SA = 6, SU = 7;
+
+function Day(/*number 1-31*/d, /*number 1-7*/week_day, /*number 1-12*/m, /*number 1-7*/fast){
+	this.d = d; //day
+	this.week_day = week_day;
+	this.m = m; //month
+//	this.fast = fast; //Посты ежемесячные
+	this.fast_add = "";
+	this.holiday = week_day == SU? HOLIDAY : NO_HOLIDAY;
+	this.text = "";
+	this.polieley_text = "";
+	this.now = false;
+}
+Day.prototype.get_text = function(){
+	this.fast_text = "";
+	switch(this.fast){
+		case FAST_FISH: this.fast_text = "Рыба, горяч. пища с раст. маслом"; break;
+		case FAST_OIL: this.fast_text = "Горяч. пища с раст. маслом"; break;
+		case FAST_NO_OIL: this.fast_text = "Горяч. пища без раст. масла"; break;
+		case FAST_DRY: this.fast_text = "Холод. пища без раст. масла, неподогретое питьё"; break;
+		case FAST_NO_MEAT: this.fast_text = "Пища без мяса"; break;
+		case FAST_NO_MEAL: this.fast_text = "Воздержание от пищи"; break;
+	}
+	if(this.fast_add) this.fast_text += this.fast_add;
+	var items = [];
+	var fields = ["text", "polieley_text", "fast_text"];
+	for(var i =0; i < fields.length; i++) {
+		eval("if(this." + fields[i]+ ") items.push(this." + fields[i] + ");");
+	}
+	return items.join(". ");
+};
+Day.prototype.set_text = function(text){
+	if (this.text.length == 0) {
+		this.text = text;
+	} else {
+		if (text.indexOf("двунадесятый") > 0) {
+			this.text = text + ". " + this.text;
+		} else {
+			this.text += ". " + text;
+		}
+	}
+};
+Day.prototype.set_holiday = function(text){
+	this.set_text(text);
+	this.holiday = HOLIDAY;
+};
+Day.prototype.set_polieley = function(text){
+	this.polieley_text = text;
+	if(this.fast == FAST_NO_OIL) this.fast = FAST_OIL;
+};
+Day.prototype.set_fast_polieley = function(/*array*/fasts, /*bool*/strict_fast){
+	this.fast = fasts[this.week_day];
+	if(this.polieley_text && (this.fast == FAST_NO_OIL || this.fast == FAST_DRY)){
+		if(strict_fast && (this.week_day == MO || this.week_day == WE || this.week_day == FR)){
+			this.fast = FAST_NO_OIL;
+		}
+		else this.fast = FAST_OIL;
+	}
+};
+Day.prototype.next = function() {
+	if (this.d < YEAR[this.m].max_day) {
+		return YEAR[this.m].days[this.d+1];
+	}
+	return YEAR[this.m == 12? 1 : this.m+1].days[1];
+};
+Day.prototype.prev = function() {
+	if (this.d > 1) return YEAR[this.m].days[this.d-1];
+	return YEAR[this.m-1].get_max_day();
+};
+
+function /*Date*/ get_Easter(/*number*/year){
+	var a = (19 * (year % 19) + 15) % 30;
+	var b = (2 * (year % 4) + 4 * (year % 7) + 6 * a + 6) % 7;
+	var c = a + b, d;
+	if(c > 10){ d = c - 9; m = APR.id; }
+	else{ d = 22 + c; m = MAR.id; }
+	d += 13; //new style
+	var limit = m == MAR.id? 31 : 30;
+	if(d > limit){ d -= limit; m++; }
+	return new Date(year, m-1, d, 0, 0, 0);
+}
+
+function /*bool*/ is_leap(/*number*/year){
+	var date1 = new Date(year, 0, 1, 0, 0, 0);
+	var date2 = new Date(year+1, 0, 1, 0, 0, 0);
+	var days = Math.round((date2 - date1) / 86400000); 
+	return days == 366;
+}
+
+function compute_year(/*number*/year){
+	html_calendar.innerHTML = "<span class=big>Подождите...</span>";
+
+	FEB.max_day = is_leap(year)? 29 : 28;
+
+	var date = new Date(year, 0, 1, 0, 0, 0);
+	var week_day = date.getDay(); if (week_day == 0) week_day = 7;
+	
+	fast = FAST_FISH;
+	for(var m=1; m<=12; m++){
+		var month = YEAR[m];
+		month.days = [];
+		if(month == JUL) fast = FAST_NO_OIL;
+		for(d=1; d<=month.max_day; d++){
+			month.days[d] = new Day(d, week_day, m, (week_day == WE || week_day == FR)? fast : NO_FAST);
+			week_day++; if(week_day > 7) week_day = 1;
+		}
+	}
+	set_polieleys();
+	set_holidays_fasts(); //Праздники
+}
+
+function set_holidays_fasts(){
+
+	JAN.days[7].set_text("Рождество Христово (двунадесятый)");
+	JAN.days[7].holiday = BIG_HOLIDAY;
+	JAN.days[14].set_holiday("Обрезание Господне (великий)");
+	JAN.days[19].set_holiday("Крещение Господне (двунадесятый)");
+	MAY.days[21].set_holiday("Апостола и евангелиста Иоанна Богослова");
+	MAY.days[22].set_holiday("Святителя Николая, архиепископа Мир Ликийских, чудотворца");
+	JUL.days[12].set_holiday("Святых перв. апостолов Петра и Павла (великий)");
+	AUG.days[19].set_holiday("Преображение Господне (двунадесятый)");
+	AUG.days[28].set_holiday("Успение Пресвятой Богородицы (двунадесятый)");
+	SEP.days[11].set_holiday("Усекновение главы Иоанна Предтечи (великий)");
+	SEP.days[21].set_holiday("Рождество Пресвятой Богородицы (двунадесятый)");
+	SEP.days[27].set_holiday("Воздвижение Креста Господня (двунадесятый)");
+	OCT.days[9].set_holiday("Апостола и евангелиста Иоанна Богослова");
+	if(OCT.days[9].fast != NO_FAST) OCT.days[9].fast = FAST_FISH;
+	OCT.days[14].set_holiday("Покров Пресвятой Богородицы (великий)");
+	if(OCT.days[14].fast != NO_FAST) OCT.days[14].fast = FAST_FISH;
+	DEC.days[4].set_holiday("Введение во храм Пресвятой Богородицы (двунадесятый)");
+	DEC.days[19].set_holiday("Святителя Николая, архиепископа Мир Ликийских, чудотворца");
+
+	var day = NOV.days[7];
+	while (day.week_day != SA) day = day.prev();
+	day.set_text("Дмитриевская родительская суббота");
+	day.holiday = POMIN;
+
+	if(YEAR_NUM == now.getFullYear()){
+		YEAR[now.getMonth()+1].days[now.getDate()].now = true;
+	}
+
+	//Рождественский пост
+	var fasts = [null, FAST_NO_OIL, FAST_FISH, FAST_DRY, FAST_FISH, FAST_DRY, FAST_FISH, FAST_FISH];
+	day = NOV.days[28];
+	day.set_text("Начало Рождественского поста");
+	while (day != DEC.days[19]) {
+		day.set_fast_polieley(fasts, false);
+		day = day.next();
+	}
+	day.fast = FAST_FISH; //Святителя Николая
+	DEC.days[4].fast = FAST_FISH; //Введение во храм Пресвятой Богородицы
+
+	fasts = [null, FAST_NO_OIL, FAST_OIL, FAST_DRY, FAST_OIL, FAST_DRY, FAST_FISH, FAST_FISH];
+	day = DEC.days[20];
+	while (day != JAN.days[2]) {
+		day.set_fast_polieley(fasts, true);
+		day = day.next();
+	}
+	fasts = [null, FAST_DRY, FAST_NO_OIL, FAST_DRY, FAST_NO_OIL, FAST_DRY, FAST_OIL, FAST_OIL];
+	while (day != JAN.days[6]) {
+		day.set_fast_polieley(fasts, true);
+		day = day.next();
+	}
+	day.set_text("Рождественский сочельник");
+	day.fast = (day.week_day == SA || day.week_day == SU)? FAST_OIL : FAST_DRY;
+	day.fast_add = ", воздержание от пищи до первой вечерней звезды";
+	day = day.next();
+
+	//Святки
+	while (day != JAN.days[18]) {
+		day.fast = NO_FAST;
+		day = day.next();
+	}
+	day.set_text("Крещенский сочельник");
+	day.fast = FAST_OIL;
+	day.fast_add = ", воздержание от пищи до освящения воды";
+	JAN.days[19].fast = NO_FAST; //Крещение Господне или Богоявление
+
+	//Успенский пост
+	fasts = [null, FAST_DRY, FAST_NO_OIL, FAST_DRY, FAST_NO_OIL, FAST_DRY, FAST_OIL, FAST_OIL];
+	day = AUG.days[14];
+	day.set_text("Начало Успенского поста");
+	while (day != AUG.days[28]) {
+		if(day.d == 19) day.fast = FAST_FISH; //Преображение Господне
+		else day.set_fast_polieley(fasts, true);
+		day = day.next();
+	}
+	//Успение Богородицы
+	if(day.week_day == WE || day.week_day == FR) day.fast = FAST_FISH;
+
+	//Усекновение главы Иоанна Предтечи
+	day = SEP.days[11];
+	if(day.fast != WE && day.week_day != FR) day.fast = FAST_OIL;
+
+	//Рождество Богородицы
+	day = SEP.days[21];
+	if(day.week_day == WE || day.week_day == FR) day.fast = FAST_FISH;
+
+	//Воздвижение Креста Господня
+	day = SEP.days[27];
+	if(day.week_day != WE && day.week_day != FR) day.fast = FAST_OIL;
+
+	//Пасха
+	var Easter = get_Easter(YEAR_NUM);
+	day = YEAR[Easter.getMonth()+1].days[Easter.getDate()];
+	day.set_text("Воскресение Христово. Пасха");
+	day.holiday = BIG_HOLIDAY;
+	var day_Easter = day;
+
+	//Страстная неделя
+	var passion = 0;
+	var texts = [
+		"Великий Понедельник",
+		"Великий Вторник",
+		"Великая Среда",
+		"Великий Четверг. Тайная Вечеря",
+		"Великая Пятница. Распятие Христа",
+		"Великая Суббота. Сошествие Христа во ад"
+	];
+
+	for(var i=6; i>0; i--){
+		day = day.prev();
+		day.fast = FAST_DRY;
+		day.set_text(texts[i-1]);
+		if(i == 5) day.fast_add = ", воздержание от пищи до выноса плащаницы";
+		if(day == APR.days[7]) passion = i;
+	}
+	day = day.prev();
+	day.fast = FAST_FISH;
+	day.set_text("Вход Господень в Иерусалим (двунадесятый)");
+
+	//Великий пост
+	texts = [
+		"Неделя 5-я Великого поста, прп. Марии Египетской",
+		"Неделя 4-я Великого поста, прп. Иоанна Лествичника",
+		"Неделя 3-я Великого поста, Крестопоклонная",
+		"Неделя 2-я Великого поста, свт. Григория Паламы, архиеп. Солунского",
+		"Торжество Православия"
+	];
+	fasts = [null, FAST_DRY, FAST_NO_OIL, FAST_DRY, FAST_NO_OIL, FAST_DRY, FAST_OIL, FAST_OIL];
+	for(var k=0; k<5; k++){
+		for(var i=7; i>0; i--){ 
+			day = day.prev();
+			day.set_fast_polieley(fasts, true);
+			if(k==0 && i==7){ 
+				day.set_holiday("Лазарева суббота");
+				day.fast_add = ", рыбная икра";
+			}
+			if((k>=2 && k<=4) && i==7){
+				day.set_text("Вселенская родительская суббота "+(6-k)+"-й недели Великого поста");
+				day.holiday = POMIN;
+			}
+		}
+		day.set_text(texts[k]);
+	}
+
+	fasts = [null, FAST_DRY, FAST_DRY, FAST_DRY, FAST_DRY, FAST_DRY, FAST_OIL, FAST_OIL];
+	for(var i=6; i>1; i--){ 
+		day = day.prev();
+		day.fast = fasts[day.week_day];
+	}
+	day = day.prev();
+	day.fast = FAST_NO_MEAL;
+	day.set_text("Начало Великого поста");
+
+	for(var i=7; i>0; i--){ 
+		day = day.prev();
+		day.fast = FAST_NO_MEAT;
+		if(i==1) day.set_text("Седмица сырная");
+		else if(i==7) day.set_text("Воспоминание Адамова изгнания. Прощеное воскресенье");
+	}
+
+	fasts = [null, FAST_OIL, NO_FAST, FAST_NO_OIL, NO_FAST, FAST_NO_OIL, NO_FAST, NO_FAST];
+	for(var i=8; i>0; i--){ 
+		day = day.prev();
+		day.set_fast_polieley(fasts, false);
+		if(i==8) day.set_text("Неделя о Страшном Суде");
+		else if(i==7){ 
+			day.set_text("Вселенская родительская суббота");
+			day.holiday = POMIN;
+		}
+	}
+
+	day.set_text("Неделя о блудном сыне");
+	for(var i=7; i>0; i--){ 
+		day = day.prev();
+		day.fast = NO_FAST;
+	}
+	day.set_text("Неделя о мытаре и фарисее");
+	for(var i=7; i>0; i--){ day = day.prev(); }
+	day.set_text("Неделя о Закхее-мытаре");
+
+	//Пятидесятница
+	day = day_Easter;
+	for(var i=0; i<7; i++){
+		day = day.next();
+		day.fast = NO_FAST;
+	}
+	day.set_text("Неделя 2-я по Пасхе (Антипасха). Воспоминание уверения ап. Фомы");
+	for(var i=0; i<7; i++){ 
+		day = day.next();
+		if(i==1){
+			day.set_text("Радоница");
+			day.holiday = POMIN;
+		}
+	}
+	day.set_text("Неделя 3-я по Пасхе, святых жен-мироносиц");
+	for(var i=0; i<7; i++){ day = day.next(); }
+	day.set_text("Неделя 4-я по Пасхе, о расслабленном");
+	for(var i=0; i<7; i++){ day = day.next(); }
+	day.set_text("Неделя 5-я по Пасхе, о самарянке");
+	for(var i=0; i<7; i++){ day = day.next(); }
+	day.set_text("Неделя 6-я по Пасхе, о слепом");
+	for(var i=0; i<7; i++){
+		day = day.next();
+		if(i==3){
+			day.set_holiday("Вознесение Господне (двунадесятый)");
+		}
+	}
+	day.set_text("Неделя 7-я по Пасхе, свв. отцев I Вселенского Собора");
+	for(var i=0; i<7; i++){
+		day = day.next();
+		if(i==5){
+			day.set_text("Троицкая родительская суббота");
+			if(!day.holiday) day.holiday = POMIN;
+		}
+	}
+
+	//Троица
+	day.set_text("Пятидесятница. День Святой Троицы (двунадесятый)");
+	day.holiday = BIG_HOLIDAY;
+	for(var i=0; i<7; i++){
+		day = day.next();
+		day.fast = NO_FAST;
+		if(i==0){ day.set_holiday("День Святого Духа"); }
+	}
+	day.set_text("Неделя 1-я по Пятидесятнице, всех святых");
+	var day_Peter_fast = day.next();
+	for(var i=0; i<7; i++){ day = day.next(); }
+	day.set_text("Неделя 2-я по Пятидесятнице, всех святых, в земле Российской просиявших");
+
+	//Петров пост
+	day = day_Peter_fast;
+	day.set_text("Начало Петрова поста");
+	fasts = [null, FAST_NO_OIL, FAST_FISH, FAST_DRY, FAST_FISH, FAST_DRY, FAST_FISH, FAST_FISH];
+	while(day != JUL.days[12]){
+		day.set_fast_polieley(fasts, false);
+		day = day.next();
+	}
+	//Святых перв. апостолов Петра и Павла
+	if(day.week_day == WE || day.week_day == FR) day.fast = FAST_FISH;
+
+	//Рождество Иоанна Предтечи
+	day = JUL.days[7];
+	day.set_holiday("Рождество Иоанна Предтечи (великий)");
+	if(day.fast != NO_FAST) day.fast = FAST_FISH;
+
+	//Благовещение
+	day = APR.days[7];
+	day.set_text("Благовещение Пресвятой Богородицы (двунадесятый)");
+	if(day.holiday != BIG_HOLIDAY) day.holiday = HOLIDAY;
+	if(day.fast != NO_FAST) {
+		if(passion == 0) day.fast = FAST_FISH;
+		else if(passion <= 4) day.fast = FAST_OIL;
+	}
+
+	//Сретение Господне
+	day = FEB.days[15];
+	day.set_text("Сретение Господне (двунадесятый)");
+	day.holiday = HOLIDAY;
+	if(day.fast == FAST_OIL || day.fast == FAST_NO_OIL) day.fast = FAST_FISH;
+
+	if (!MAY.days[9].holiday) MAY.days[9].holiday = POMIN;
+	MAY.days[9].set_text("Поминовение усопших воинов");
+
+	var day = FEB.days[7];
+	if (day.week_day == MO || day.week_day == TU || day.week_day == WE) {
+		while (day.week_day != SU) day = day.prev();
+	} else {
+		while (day.week_day != SU) day = day.next();
+	}
+	day.set_text("Собор новомучеников и исповедников Российских");
+
+	set_additional_holidays();
+}
+
+function /*html*/ get_month_HTML(/*Object*/month){
+	var max_day = month.max_day;
+	var html = "<table cellspacing=0 cellpadding=0>";
+	var week_day = month.days[1].week_day - 1;
+	max_day += week_day;
+	if (SHOW_WEEK_DAYS == 1) {
+		html += "<tr>";
+		for(var i=0; i<7; i++) html += "<td>" + WEEK_DAYS[i] + "</td>";
+		html += "</tr>";
+	}
+	for(var i=1; i<=max_day; i+=7){
+		var row = "";
+		for(var d=i; d<=Math.min(i+6, max_day); d++){ 
+			if(d <= week_day){
+				row += "<td></td>";
+				continue;
+			}
+			var day = month.days[d - week_day];
+			var inner = day.d;
+			if(day.now){ 
+				var color = day.holiday == HOLIDAY? "red" : 
+					day.holiday == BIG_HOLIDAY? "white" : "black";
+				inner = "<span id=now style='color: " + color + 
+				"; border: " + BORDER + "px solid "+color+"; padding: 1px'>"+inner+"</span>";
+			}
+			var text = day.get_text();
+			if(text){ 
+				text = month.name + ", " + day.d + ". " + text;
+				var style = day.holiday == HOLIDAY? " class=holiday" : 
+					day.holiday == BIG_HOLIDAY? " class=big_holiday" : 
+					day.holiday == POMIN? "class=pomin" : "";
+				inner = "<a title='"+text+"' href=\"javascript:alert('"+text+"')\""+style+">"+inner+"</a>";
+			}
+			if(day.holiday == HOLIDAY && !day.text) inner = "<span class=holiday>"+inner+"</span>";
+//			var style = "";
+			var style = day.holiday == BIG_HOLIDAY? " class=big_holiday" : get_fast_style(day.fast);
+			row += "<td"+style+">"+inner+"</td>";
+		}
+		html += "<tr>" + row + "</tr>";
+	}
+	html += "</table>";
+	return html;
+}
+
+function /*html*/ get_year_HTML(/*number*/year){
+	var html = "<table cellspacing=" + PADDING + ">";
+	for(var i=1; i<=12; i+=MONTHS_IN_ROW){
+		var row = "";
+		for(var m=i; m < i+MONTHS_IN_ROW; m++){ 
+			row += "<td valign=top class=border><span class=big>"+YEAR[m].name+"</span>";
+			row += get_month_HTML(YEAR[m]);
+			row += "</td>";
+		}
+		html += "<tr>" + row + "</tr>";
+	}
+	html += "</table>";
+	return html;
+}
+
+function /*html*/ get_one_month_HTML(/*number*/year, /*number*/month){
+	var html = "<table cellspacing=" + PADDING + "><tr>" + 
+	"<td valign=top class=border>" +
+	get_month_HTML(YEAR[month]) + "</td></tr></table>";
+	return html;
+}
+
+function reload() {
+	location.href = "?months_in_row=" + MONTHS_IN_ROW + "&font=" + FONT + "&week_days=" + SHOW_WEEK_DAYS;
+}
+
+function show_settings() {
+	var html = "Таблица&nbsp;<select onchange='MONTHS_IN_ROW=this.value'>";
+	var options = [["0", "1x1"], ["12", "1x12"], ["6", "2x6"], ["4", "3x4"], ["3", "4x3"], ["2", "6x2"], ["1", "12x1"]];
+	for (var i=0; i<options.length; i++) {
+		var selected = options[i][0] == MONTHS_IN_ROW? " selected" : "";
+		html += "<option value=" + options[i][0] + selected + ">" + options[i][1] +
+		"</option>";
+	}
+	html += "</select>";
+	html += " Шрифт&nbsp;<select onchange='FONT=this.value'>";
+	for (var i=10; i<=48; i+=2) {
+		var selected = i == FONT? " selected" : "";
+		html += "<option value=" + i + selected + ">" + i + "</option>";
+	}
+	html += "</select>";
+	html += " Дни&nbsp;недели&nbsp;<input type='checkbox' onclick='SHOW_WEEK_DAYS=this.checked?1:0' " + (SHOW_WEEK_DAYS == 1? "checked" : "") + ">";
+	html += "<br>После применения настроек сохраните закладку в браузере.";
+	html += "<br><a href='javascript:reload()'>Применить</a>";
+	html_settings.innerHTML = html;
+}
+
+function next() {
+	if(ONE_MONTH) {
+		MONTH_NUM++;
+		if(MONTH_NUM > 12) {
+			MONTH_NUM = 1;
+			YEAR_NUM++;
+			compute_year(YEAR_NUM);
+		}
+	} else {
+		YEAR_NUM++;
+		compute_year(YEAR_NUM);
+	}
+	show();
+}
+
+function prev() {
+	if(ONE_MONTH) {
+		if (MONTH_NUM == 1 && YEAR_NUM <= 1900) return;
+		MONTH_NUM--;
+		if(MONTH_NUM < 1) {
+			MONTH_NUM = 12;
+			YEAR_NUM--;
+			compute_year(YEAR_NUM);
+		}
+	} else {
+		if(YEAR_NUM <= 1900) return;
+		YEAR_NUM--;
+		compute_year(YEAR_NUM);
+	}
+	show();
+}
+
+function show() {
+	if(ONE_MONTH) {
+		html_calendar.innerHTML = get_one_month_HTML(YEAR_NUM, MONTH_NUM);
+		html_date.innerHTML = YEAR[MONTH_NUM].name + " " + YEAR_NUM;
+	} else {
+		html_calendar.innerHTML = get_year_HTML(YEAR_NUM);
+		html_date.innerHTML = YEAR_NUM;
+	}
+}
+
+compute_year(YEAR_NUM);
+show();
+</script>

@@ -1,0 +1,39 @@
+{
+    "compilerOptions": {
+        "outDir": "../built/",
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "strictNullChecks": true,
+        "skipDefaultLibCheck": true,
+        "skipLibCheck": true,
+        "declaration": true,
+        "declarationDir": "../ts/@types",
+        "module": "amd",
+        "target": "es5",
+        "lib": [
+            "es2015.promise",
+            "dom",
+            "es5"
+        ],
+        "baseUrl": "../../",
+        "paths": {
+            "requirejs": ["node_modules/@types/requirejs/index.d.ts"],
+            "jquery": ["node_modules/@types/jquery/index.d.ts"],
+            "bootstrap": ["node_modules/@types/bootstrap/index.d.ts"],
+            "knockout": ["node_modules/knockout/build/types/knockout.d.ts"],
+            "toastr": ["node_modules/@types/toastr/index.d.ts"],
+            "slimscroll": ["node_modules/@types/jquery-slimscroll/index.d.ts"],
+            "icheck": ["node_modules/@types/icheck/index.d.ts"],
+            "datePicker": ["node_modules/@types/bootstrap-datepicker/index.d.ts"],
+            "colorpicker": ["node_modules/@types/bootstrap-colorpicker/index.d.ts"],
+            "flot": ["node_modules/@types/flot/index.d.ts"],
+            "pako": ["node_modules/@types/pako/index.d.ts"],
+            "sweetalert": ["node_modules/sweetalert/typings/sweetalert.d.ts"],
+            "nouislider": ["node_modules/@types/nouislider/index.d.ts"],
+            "kontext/*": ["kontext/ts/*"]
+        }
+    },
+    "include": ["../ts/**/*"]
+}
