@@ -10,9 +10,7 @@ spring:
             authorizationGrantType: authorization_code
             scope:
               - identify
-#            redirectUri: "http://localhost:8080/login/oauth2/code/discord"
-            redirectUri: "http://app.inkontext.ru/login/oauth2/code/discord"
-#            redirectUri: ${DISCORD_REDIRECT_URI}
+            redirectUri: "{baseUrl}/login/oauth2/code/discord"
             clientName: zachet
         provider:
           discord:
