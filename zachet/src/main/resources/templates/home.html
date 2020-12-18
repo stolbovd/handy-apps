@@ -1,32 +1,40 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>FourScouts OAuth2 Discord Demo</title>
-
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css">
+	<title>OAuth2 Discord Demo</title>
+	<link th:href="@{https://app.inkontext.ru/kontext/plugins/bootstrap/bootstrap.min.css}"
+	      rel="stylesheet">
+	<link th:href="@{https://app.inkontext.ru/kontext/theme/css/font-awesome/css/font-awesome.min.css}"
+	      rel="stylesheet">
 	<link rel="stylesheet" th:href="@{/styles.css}">
 </head>
 <body>
-<section class="section">
-	<div class="container has-text-centered">
-		<div class="column is-6 is-offset-3">
-			<h1 class="title">FourScouts OAuth2 Discord Demo</h1>
+<div class="container">
+	<div class="offset-3">
+		<h1 class="title">OAuth2 Discord Demo</h1>
 
-			<div sec:authorize="isAuthenticated()">
-				<div class="box">
-					Hello, <strong th:text="${#authentication.name}">FourScouts</strong>!
-				</div>
+		<div sec:authorize="isAuthenticated()">
+			<div class="box">
+				Привет, <strong th:text="${#authentication.name}"></strong>!
 			</div>
+		</div>
 
-			<div sec:authorize="isAnonymous()">
-				<div class="box">
-					<a class="button is-blurple" th:href="@{/oauth2/authorization/discord}">Log in with Discord</a>
-				</div>
+		<div sec:authorize="isAnonymous()">
+			<div class="box">
+				<a class="btn btn-primary" th:href="@{/oauth2/authorization/discord}">Log in with
+					Discord</a>
 			</div>
 		</div>
 	</div>
-</section>
+</div>
+<script th:src="@{https://app.inkontext.ru/kontext/plugins/require/require.js}"></script>
+<script th:src="@{https://app.inkontext.ru/kontext/built/require-config.js}"></script>
+<script th:src="@{/built/require-config-app.js}"></script>
+<script>
+	requirejs(["/built/domain/zachet.js"]);
+</script>
 </body>
 </html>

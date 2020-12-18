@@ -39,13 +39,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+ssh://git@gitlab.com/stolbovd/sites.git"
+        "url": "git+ssh://git@github.com/stolbovd/handy-apps.git"
     },
     "keywords": [],
     "author": "stolbovd",
     "license": "ISC",
     "bugs": {
-        "url": "https://studio.inkontext.ru/youtrack/issues"
+        "url": "https://github.com/stolbovd/handy-apps/issues"
     },
-    "homepage": "https://gitlab.com/stolbovd/sites#readme"
+    "homepage": "https://github.com/stolbovd/handy-apps#readme"
 }
